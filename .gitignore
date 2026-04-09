@@ -44,10 +44,10 @@ Thumbs.db
 # Logs
 *.log
 
-# ML Models
-*.pkl
-*.joblib
-*.h5
+# ML Models (Removed from ignore to allow push as requested)
+# *.pkl
+# *.joblib
+# *.h5
 
 # Build
 build/

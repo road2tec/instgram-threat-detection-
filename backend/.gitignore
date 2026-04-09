@@ -51,10 +51,10 @@ Thumbs.db
 # Logs
 *.log
 
-# ML Models
-*.pkl
-*.joblib
-*.h5
+# ML Models (Removed from ignore to allow push)
+# *.pkl
+# *.joblib
+# *.h5
 
 # Data
 data/raw/
