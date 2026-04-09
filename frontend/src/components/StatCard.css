@@ -1,0 +1,62 @@
+/* Subtle Clean StatCard Styling */
+.stat-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 2rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+  height: 100%;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  border-color: #cbd5e1;
+}
+
+.stat-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.stat-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.stat-value {
+  font-size: 3rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.stat-sub-label {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-top: 5px;
+}
+
+.stat-icon-box {
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Subtle Accent Colors */
+.stat-icon-box.blue { background: #eff6ff; color: #2563eb; }
+.stat-icon-box.red { background: #fef2f2; color: #ef4444; }
+.stat-icon-box.orange { background: #fff7ed; color: #f97316; }
+.stat-icon-box.purple { background: #faf5ff; color: #8b5cf6; }
+
+@media (max-width: 1440px) {
+  .stat-value { font-size: 2.25rem; }
+}

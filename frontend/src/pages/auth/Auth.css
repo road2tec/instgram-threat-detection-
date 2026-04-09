@@ -1,0 +1,150 @@
+/* Premium Split-Screen Authentication Styling */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+
+.auth-page, .auth-form-container {
+  display: flex;
+  min-height: 100vh;
+  background: white;
+  font-family: 'Inter', sans-serif;
+  color: #0f172a;
+}
+
+/* Side Panel - High Fidelity Branding */
+.auth-side-panel {
+  flex: 1;
+  background: radial-gradient(circle at 0% 0%, #1e293b 0%, #020617 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 5rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-side-panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-image: radial-gradient(rgba(37, 99, 235, 0.1) 1px, transparent 1px);
+  background-size: 30px 30px;
+  opacity: 0.5;
+}
+
+.side-panel-content {
+  position: relative;
+  z-index: 2;
+  max-width: 500px;
+}
+
+.side-panel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(37, 99, 235, 0.2);
+  color: #60a5fa;
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.side-panel-content h3 {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, white, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.side-panel-content p {
+  font-size: 1.1rem;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin-bottom: 3rem;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #e2e8f0;
+}
+
+.feature-icon-wrapper {
+  background: rgba(37, 99, 235, 0.1);
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+/* Form Container Area */
+.auth-form-area, .auth-form-card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  background: white;
+}
+
+.auth-card, .auth-form-inner {
+  width: 100%;
+  max-width: 440px;
+  text-align: left;
+}
+
+.back-to-home {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 3rem;
+  transition: color 0.2s;
+}
+
+.back-to-home:hover { color: #2563eb; }
+
+.auth-header { margin-bottom: 2.5rem; }
+.auth-logo { color: #2563eb; margin-bottom: 1rem; }
+.auth-header h1 { font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem; }
+.auth-header p { color: #64748b; font-size: 1rem; }
+
+/* Inputs and Buttons */
+.auth-form { display: flex; flex-direction: column; gap: 1.5rem; }
+.form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+.form-label { font-size: 0.8rem; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em; }
+.form-input, .auth-input { 
+  width: 100%; padding: 0.85rem 1.25rem; border: 1px solid #e2e8f0; border-radius: 12px; 
+  font-size: 1rem; background: #fdfdfd; transition: all 0.2s; 
+}
+.form-input:focus, .auth-input:focus { border-color: #2563eb; background: white; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); outline: none; }
+
+.auth-btn, .auth-submit-btn {
+  background: #2563eb; color: white; border: none; padding: 1rem; border-radius: 12px; 
+  font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.auth-btn:hover { background: #1d4ed8; transform: translateY(-1px); }
+
+.auth-footer { margin-top: 2rem; font-size: 0.95rem; color: #64748b; font-weight: 500; text-align: center; }
+.auth-link { color: #2563eb; font-weight: 700; text-decoration: none; }
+
+@media (max-width: 1024px) {
+  .auth-side-panel { display: none; }
+  .auth-form-area, .auth-page { padding: 2rem; justify-content: center; }
+}

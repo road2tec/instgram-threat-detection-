@@ -1,0 +1,68 @@
+/* Full Screen Optimized Dashboard Layout */
+.dashboard-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background: radial-gradient(circle at top right, #0f172a, #020617);
+  overflow: hidden;
+  color: #e2e8f0;
+}
+
+.dashboard-sidebar {
+  width: 280px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(15px);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 50;
+}
+
+.dashboard-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2.5rem;
+  background: transparent;
+  width: 100%;
+}
+
+/* Adjust for Windows Full Screen */
+.dashboard-content-wrapper {
+  max-width: 1800px; /* Expansive for large monitors */
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Subtle Card Styling */
+.card {
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.card:hover {
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+/* Responsive Grid for All Pages */
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+}
+
+@media (max-width: 1440px) {
+  .dashboard-content-wrapper {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .dashboard-sidebar {
+    width: 80px; /* Icons only for smaller screens */
+  }
+}

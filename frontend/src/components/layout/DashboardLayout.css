@@ -1,0 +1,57 @@
+/* Subtle Clean Minimalist Dashboard Layout */
+:root {
+  --bg-main: #f8fafc;
+  --bg-sidebar: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --accent: #3b82f6;
+  --border: #e2e8f0;
+}
+
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100vw;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.dashboard-main {
+  flex: 1;
+  padding: 2rem 3rem;
+  overflow-y: auto;
+}
+
+.dashboard-content-wrapper {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* Page Header - Clean & Simple */
+.dashboard-header {
+  margin-bottom: 3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.page-description {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+/* Fullscreen toggle - Hidden or subtle */
+.fullscreen-toggle-btn {
+  display: none; /* Keep it clean */
+}
+
+@media (max-width: 1024px) {
+  .dashboard-layout { flex-direction: column; }
+}

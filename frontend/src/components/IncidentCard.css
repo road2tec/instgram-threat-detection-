@@ -1,0 +1,53 @@
+/* Forensic Incident Card Styling */
+.incident-card {
+  background: white;
+  border-radius: 20px;
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  margin-bottom: 2rem;
+  overflow: hidden;
+}
+
+.incident-card.threat-card { border-left: 6px solid #dc2626; background: #fffaf9; }
+.incident-card.normal-card { border-left: 6px solid #16a34a; background: #f9fffb; }
+
+.incident-card:hover { border-color: #cbd5e1; transform: translateY(-4px); box-shadow: 0 15px 30px rgba(0, 0, 0, 0.05); }
+
+.incident-card-inner { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.incident-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(226, 232, 240, 0.5); padding-bottom: 1rem; }
+.badges-row { display: flex; gap: 10px; }
+
+.severity-badge-mini, .prediction-badge-mini {
+  padding: 4px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;
+}
+
+.severity-critical { background: #fee2e2; color: #dc2626; border: 1px solid rgba(220, 38, 38, 0.1); }
+.severity-medium { background: #fff7ed; color: #ea580c; border: 1px solid rgba(234, 88, 12, 0.1); }
+.severity-low { background: #f0fdf4; color: #16a34a; border: 1px solid rgba(22, 163, 74, 0.1); }
+
+.prediction-phishing { background: #fce7f3; color: #be185d; }
+.prediction-ddos { background: #eff6ff; color: #1d4ed8; }
+.prediction-malware { background: #f5f3ff; color: #7c3aed; }
+.prediction-normal { background: #dcfce7; color: #16a34a; }
+
+.timestamp-mini { font-size: 0.75rem; color: #94a3b8; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+.incident-card-title {
+  font-size: 1.15rem; font-weight: 800; color: #0f172a; text-decoration: none; display: flex; align-items: center; gap: 10px;
+}
+.incident-card-title:hover { color: #2563eb; }
+.incident-card-title .arrow-icon { color: #94a3b8; }
+
+.incident-body-text { font-size: 0.95rem; color: #475569; line-height: 1.6; font-weight: 500; }
+
+.forensic-footer {
+  display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(226, 232, 240, 0.5); padding-top: 1rem;
+}
+
+.ml-stat { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 700; color: #64748b; }
+
+.category-tag { font-size: 0.7rem; font-weight: 800; color: #94a3b8; letter-spacing: 0.05em; text-transform: uppercase; }
+.cat-val { color: #1e293b; font-weight: 900; }
