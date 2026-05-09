@@ -16,9 +16,9 @@ def test():
     print(f"Posts count: {len(result.get('posts', []))}")
     
     if not result.get('posts'):
-        print("❌ FAILED - Still got dummy or empty data.")
+        print("[FAILURE] Still got dummy or empty data.")
     else:
-        print("✅ SUCCESS - Real data captured!")
+        print("[SUCCESS] Real data captured!")
 
 if __name__ == "__main__":
     test()

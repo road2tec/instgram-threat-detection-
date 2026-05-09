@@ -1,12 +1,13 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
 function CategoryBarChart({ data }) {
   // Transform the data for the bar chart
   const chartData = Object.entries(data || {}).map(([key, value]) => ({
-    category: key.charAt(0).toUpperCase() + key.slice(1),
+    key: key,
+    category: key.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
     count: value,
     fill: getColorForCategory(key)
-  }))
+  })).sort((a, b) => b.count - a.count)
 
   function getColorForCategory(category) {
     const colors = {
@@ -24,15 +25,11 @@ function CategoryBarChart({ data }) {
       const data = payload[0]
       return (
         <div className="chart-tooltip">
-          <p className="tooltip-label">
-            <strong>{label}</strong>
-          </p>
+          <p className="tooltip-label"><strong>{label}</strong></p>
           <p className="tooltip-value">
-            <span
-              className="tooltip-color-indicator"
-              style={{ backgroundColor: data.payload.fill }}
-            />
-            Count: {data.value}
+            <span className="tooltip-color-indicator" style={{ backgroundColor: data.payload.fill }} />
+            <span className="tooltip-name">Count:</span>
+            <span className="tooltip-amount">{data.value}</span>
           </p>
         </div>
       )
@@ -53,19 +50,15 @@ function CategoryBarChart({ data }) {
       <ResponsiveContainer width="100%" height={300}>
         <BarChart
           data={chartData}
-          margin={{
-            top: 20,
-            right: 30,
-            left: 20,
-            bottom: 60,
-          }}
+          margin={{ top: 20, right: 30, left: 0, bottom: 60 }}
+          barSize={50}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
           <XAxis
             dataKey="category"
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 12, fill: '#64748b' }}
+            tick={{ fontSize: 10, fill: '#64748b' }}
             angle={-45}
             textAnchor="end"
             height={80}
@@ -73,14 +66,18 @@ function CategoryBarChart({ data }) {
           <YAxis
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 12, fill: '#64748b' }}
+            tick={{ fontSize: 10, fill: '#64748b' }}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
           <Bar
             dataKey="count"
-            radius={[4, 4, 0, 0]}
-            maxBarSize={80}
-          />
+            radius={[6, 6, 0, 0]}
+            animationDuration={1500}
+          >
+            {chartData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.fill} />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>

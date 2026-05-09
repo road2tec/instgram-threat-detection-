@@ -17,6 +17,7 @@ class Incident:
         threat_actors: Optional[list] = None,
         affected_systems: Optional[list] = None,
         tags: Optional[list] = None,
+        user_id: Optional[str] = None,
         created_at: Optional[datetime] = None,
         updated_at: Optional[datetime] = None
     ):
@@ -31,6 +32,7 @@ class Incident:
         self.threat_actors = threat_actors or []
         self.affected_systems = affected_systems or []
         self.tags = tags or []
+        self.user_id = user_id
         self.created_at = created_at or datetime.utcnow()
         self.updated_at = updated_at or datetime.utcnow()
 
@@ -48,6 +50,7 @@ class Incident:
             'threat_actors': self.threat_actors,
             'affected_systems': self.affected_systems,
             'tags': self.tags,
+            'user_id': self.user_id,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
@@ -67,6 +70,7 @@ class Incident:
             threat_actors=data.get('threat_actors', []),
             affected_systems=data.get('affected_systems', []),
             tags=data.get('tags', []),
+            user_id=data.get('user_id'),
             created_at=data.get('created_at'),
             updated_at=data.get('updated_at')
         )

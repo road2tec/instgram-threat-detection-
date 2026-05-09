@@ -1,14 +1,18 @@
 from flask import Blueprint, jsonify, request
 from services.incident_service import IncidentService
 from config.config import Config
+from middleware.auth import token_required
+from flask_jwt_extended import get_jwt_identity
 
 incidents_bp = Blueprint('incidents', __name__)
 incident_service = IncidentService()
 
 @incidents_bp.route('/', methods=['GET'])
+@token_required
 def get_incidents():
     """Get all incidents with optional filters"""
     try:
+        user_id = get_jwt_identity()
         severity = request.args.get('severity')
         category = request.args.get('category')
         limit = int(request.args.get('limit', 100))
@@ -16,7 +20,8 @@ def get_incidents():
         incidents = incident_service.get_incidents(
             severity=severity,
             category=category,
-            limit=limit
+            limit=limit,
+            user_id=user_id
         )
 
         return jsonify({
@@ -106,7 +111,7 @@ def get_stats():
 def save_incident():
     """Save an incident from the simulator or external source to global stats"""
     try:
-        data = request.get_json()
+        data = request.get_json(force=True)
         from services.incident_service import IncidentService
         service = IncidentService()
         service.add_incident_data({

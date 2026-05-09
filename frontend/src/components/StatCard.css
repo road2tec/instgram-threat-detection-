@@ -1,18 +1,19 @@
-/* Subtle Clean StatCard Styling */
+/* Premium Cyber-Violet StatCard Styling */
 .stat-card {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 2rem;
-  transition: all 0.2s;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
-  height: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  padding: 2.5rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
 
 .stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-  border-color: #cbd5e1;
+  transform: translateY(-8px);
+  border-color: var(--db-primary);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
 .stat-card-header {
@@ -22,41 +23,37 @@
   margin-bottom: 1.5rem;
 }
 
-.stat-label {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #475569;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.stat-value {
-  font-size: 3rem;
-  font-weight: 800;
-  color: #0f172a;
-}
-
-.stat-sub-label {
+.stat-card-title {
   font-size: 0.9rem;
-  color: #64748b;
-  margin-top: 5px;
+  font-weight: 700;
+  color: var(--db-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.stat-icon-box {
-  width: 45px;
-  height: 45px;
-  border-radius: 12px;
+.stat-card-value {
+  font-size: 2.75rem;
+  font-weight: 900;
+  color: white;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 12px;
+}
+
+.stat-card-icon {
+  opacity: 0.8;
+  filter: drop-shadow(0 0 8px currentColor);
 }
 
 /* Subtle Accent Colors */
-.stat-icon-box.blue { background: #eff6ff; color: #2563eb; }
-.stat-icon-box.red { background: #fef2f2; color: #ef4444; }
-.stat-icon-box.orange { background: #fff7ed; color: #f97316; }
-.stat-icon-box.purple { background: #faf5ff; color: #8b5cf6; }
+.stat-card-primary .stat-card-icon { color: #8b5cf6; }
+.stat-card-danger .stat-card-icon { color: #f43f5e; }
+.stat-card-warning .stat-card-icon { color: #f59e0b; }
+.stat-card-success .stat-card-icon { color: #10b981; }
 
-@media (max-width: 1440px) {
-  .stat-value { font-size: 2.25rem; }
+.update-indicator {
+  width: 10px; height: 10px;
+  background: var(--db-accent);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--db-accent);
 }

@@ -24,10 +24,15 @@ def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         try:
+            # Debug: Log incoming auth header
+            auth_header = request.headers.get('Authorization')
+            if not auth_header:
+                logger.warning(f"Auth header MISSING for {request.path}")
+            
             verify_jwt_in_request()
             return f(*args, **kwargs)
         except Exception as e:
-            logger.error(f"Token validation failed: {str(e)}")
+            logger.error(f"Token validation failed for {request.path}: {str(e)}")
             return jsonify({
                 'error': 'Token is invalid or expired',
                 'message': 'Please log in again'
@@ -163,25 +168,10 @@ class AuthMiddleware:
     def init_app(self, app):
         """Initialize the middleware with Flask app"""
         app.before_request(self.before_request)
-        app.after_request(self.after_request)
 
     def before_request(self):
         """Process request before route handling"""
-        # Log authentication attempts
-        if request.endpoint and any(
-            auth_route in request.endpoint
-            for auth_route in ['auth.login', 'auth.register']
-        ):
-            logger.info(f"Authentication attempt from {request.remote_addr}")
-
-    def after_request(self, response):
-        """Process response after route handling"""
-        # Add security headers
-        security_headers = current_app.config.get('SECURITY_HEADERS', {})
-        for header_name, header_value in security_headers.items():
-            response.headers[header_name] = header_value
-
-        return response
+        pass
 
 # Rate limiting helpers
 def get_rate_limit_key(identifier_type='ip'):

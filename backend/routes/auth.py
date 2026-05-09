@@ -20,14 +20,7 @@ logger = logging.getLogger(__name__)
 # Create auth blueprint
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
-# Initialize rate limiter
-limiter = Limiter(
-    key_func=get_remote_address,
-    default_limits=["100 per hour"]
-)
-
 @auth_bp.route('/register', methods=['POST'])
-# @limiter.limit("5 per minute")
 def register():
     """
     Register a new user
@@ -42,7 +35,7 @@ def register():
     """
     try:
         # Get request data
-        data = request.get_json()
+        data = request.get_json(force=True)
         if not data:
             return jsonify({
                 'error': 'Invalid request',
@@ -147,8 +140,7 @@ def register():
         }), 500
 
 
-@auth_bp.route('/login', methods=['POST'])
-@limiter.limit("10 per minute")
+@auth_bp.route('/login/', methods=['POST'])
 def login():
     """
     Authenticate user and return JWT tokens
@@ -161,7 +153,7 @@ def login():
     """
     try:
         # Get request data
-        data = request.get_json()
+        data = request.get_json(force=True)
         if not data:
             return jsonify({
                 'error': 'Invalid request',
@@ -342,7 +334,7 @@ def update_profile():
                 'message': 'Invalid token'
             }), 401
 
-        data = request.get_json()
+        data = request.get_json(force=True)
         if not data:
             return jsonify({
                 'error': 'Invalid request',
@@ -433,7 +425,7 @@ def logout():
         }), 500
 
 
-@auth_bp.route('/verify', methods=['GET'])
+@auth_bp.route('/verify/', methods=['GET'])
 @token_required
 def verify_token():
     """

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { TrendingUp, Search, RefreshCw, Instagram, Shield, AlertTriangle, Users, BookOpen, Fingerprint, Activity, Terminal, Database, Lock, CheckCircle, Wifi, Info, ListFilter, ShieldCheck, Eye, Quote, Radar, MonitorPlay, Zap, ArrowUpRight, History, Clock } from 'lucide-react'
+import { TrendingUp, Search, RefreshCw, Instagram, Shield, AlertTriangle, Users, BookOpen, Fingerprint, Activity, Terminal, Database, Lock, CheckCircle, Wifi, Info, ListFilter, ShieldCheck, Eye, Quote, Radar, MonitorPlay, Zap, ArrowUpRight, History, Clock, Globe } from 'lucide-react'
 import { analysisService, incidentService } from '../services/api'
 import { ChartSkeleton, SkeletonBox } from '../components/layout/Skeleton'
 import IncidentCard from '../components/IncidentCard'
@@ -40,9 +40,12 @@ export default function Analytics() {
   const [forensicInsights, setForensicInsights] = useState([])
   const [flaggedPosts, setFlaggedPosts] = useState([])
   const [investigationHistory, setInvestigationHistory] = useState([])
+  const [liveEvents, setLiveEvents] = useState([])
+  const [analyzedCount, setAnalyzedCount] = useState(0)
 
   // LIVE MONITORING STATES
   const [isMonitoring, setIsMonitoring] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [followerUpdateCount, setFollowerUpdateCount] = useState(0); 
   const monitoringIntervalRef = useRef(null);
 
@@ -67,7 +70,7 @@ export default function Analytics() {
     if (isMonitoring && profileData?.username) {
       monitoringIntervalRef.current = setInterval(() => {
         performSilentSync(profileData.username);
-      }, 30000); 
+      }, 60000); // 60s interval to allow deep-scans to complete and prevent overlapping
     } else {
       if (monitoringIntervalRef.current) clearInterval(monitoringIntervalRef.current);
     }
@@ -77,16 +80,32 @@ export default function Analytics() {
   }, [isMonitoring, profileData?.username]);
 
   const performSilentSync = async (username) => {
+    if (isSyncing) return;
     try {
-      const result = await analysisService.analyzeProfile(username);
-      if (result.success && result.profile) {
-        if (result.profile.followersCount > profileData.followersCount) {
-          setFollowerUpdateCount(result.profile.followersCount - profileData.followersCount);
-          setTimeout(() => setFollowerUpdateCount(0), 10000);
+      setIsSyncing(true);
+      const result = await analysisService.getLiveStream(username);
+      if (result.success && result.events && result.events.length > 0) {
+        setLiveEvents(prev => [...result.events, ...prev].slice(0, 10));
+        
+        // Update profile counts if follower change detected
+        const followerChange = result.events.find(e => e.type === 'follower_change');
+        if (followerChange) {
+          setProfileData(prev => ({
+            ...prev,
+            followersCount: prev.followersCount + followerChange.value
+          }));
+          setFollowerUpdateCount(followerChange.value);
+          setTimeout(() => setFollowerUpdateCount(0), 3000);
         }
-        setProfileData(result.profile);
+      } else if (result.success && result.status === 'preserving_baseline') {
+        // Just log a silent heartbeat if needed
+        console.log("[LIVE] Baseline preserved, no changes.");
       }
-    } catch (e) { console.error("Silent Sync Failed", e); }
+    } catch (e) { 
+      console.error("Live Sync Failed", e); 
+    } finally {
+      setIsSyncing(false);
+    }
   }
 
   // Simulate progress when analyzing
@@ -155,6 +174,8 @@ export default function Analytics() {
     setForensicInsights([]);
     setFlaggedPosts([]);
     setIsMonitoring(false);
+    setLiveEvents([]);
+    setAnalyzedCount(0);
     
     try {
       const result = await analysisService.analyzeProfile(target);
@@ -163,6 +184,20 @@ export default function Analytics() {
         const allPosts = result.data || [];
         setScanResults(allPosts);
         
+        // Start staggered analysis simulation
+        if (allPosts.length > 0) {
+          let count = 0;
+          const analysisInterval = setInterval(() => {
+            count++;
+            setAnalyzedCount(count);
+            if (count >= allPosts.length) {
+              clearInterval(analysisInterval);
+            }
+          }, 400); // Faster reveal for better UX
+        } else {
+          setAnalyzedCount(0);
+        }
+
         const threats = allPosts.filter(p => p.predicted_label !== 'normal');
         setThreatCount(threats.length);
         setFlaggedPosts(threats);
@@ -217,200 +252,247 @@ export default function Analytics() {
     } catch (e) { console.error(e) }
   }
 
+  const handleMonitor = async () => {
+    try {
+      await analysisService.monitorProfile(profileData.username);
+      setIsMonitoring(true);
+      setLiveEvents([{
+        type: 'info',
+        message: 'Surveillance Mode Engaged',
+        timestamp: new Date().toISOString()
+      }]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const getForensicVerdict = () => {
-    if (trustScore < 40) return { label: 'CRITICAL: LIKELY FAKE/FRAUDULENT ENTITY', class: 'danger', icon: <AlertTriangle size={24} /> };
-    if (threatCount > 4) return { label: 'WARNING: MULTIPLE SUSPICIOUS SIGNATURES DETECTED', class: 'warning', icon: <Activity size={24} /> };
-    if (trustScore < 80) return { label: 'SUSPICIOUS: ABNORMAL ACCOUNT PARAMETERS', class: 'neutral', icon: <Info size={24} /> };
-    return { label: 'STATUS: CLEAN PROFILE | HIGH AUTHENTICITY', class: 'safe', icon: <ShieldCheck size={24} /> };
+    if (trustScore < 40) return { label: 'CRITICAL: FRAUDULENT ENTITY', class: 'danger', icon: <AlertTriangle size={24} /> };
+    if (threatCount > 4) return { label: 'WARNING: MULTIPLE THREATS', class: 'warning', icon: <Activity size={24} /> };
+    if (trustScore < 80) return { label: 'SUSPICIOUS: ABNORMAL PARAMS', class: 'neutral', icon: <Info size={24} /> };
+    return { label: 'STATUS: CLEAN | AUTHENTIC', class: 'safe', icon: <ShieldCheck size={24} /> };
   }
 
   return (
-    <div className="analytics-container">
-      {/* Premium Investigative Hero Section */}
-      <div className="analysis-hero-premium">
-        <div className="hero-pattern-overlay"></div>
-        <div className="hero-content">
-          <div className="hero-badge"><Radar size={14} /> LIVE THREAT SCANNER ACTIVE</div>
-          <h1 className="hero-title">Start Intelligence Scan</h1>
-          <p className="hero-hint">Identify Fake Entities and Malware signatures in real-time.</p>
-          
-          <form className="premium-search-container" onSubmit={(e) => { e.preventDefault(); handleAnalyze(); }}>
-            <div className="search-input-wrapper">
-              <Instagram size={22} className="ig-icon-fixed" />
+    <div className="analytics-container page-transition">
+      <div className="analytics-refined-hub">
+        {/* SUBTLE HEADER SECTION */}
+        <header className="refined-header">
+           <div className="refined-badge">
+             <Radar size={14} className="pulse-slow" /> 
+             NETWORK_SCANNER_v2.0
+           </div>
+           <h1 className="refined-title">Forensic Intelligence</h1>
+           <p className="refined-subtitle">Uncover hidden signatures and platform anomalies with AI-driven analysis.</p>
+        </header>
+
+        {/* CENTERED SEARCH ENGINE */}
+        <section className="refined-search-section">
+           <form className="refined-search-bar" onSubmit={(e) => { e.preventDefault(); handleAnalyze(); }}>
+              <Instagram size={20} className="refined-search-icon" />
               <input 
                 type="text" 
-                placeholder="Enter Instagram Profile URL or Username..." 
+                placeholder="Enter handle or profile URL..." 
                 value={searchUsername}
                 onChange={(e) => setSearchUsername(e.target.value)}
                 disabled={analyzing}
               />
-            </div>
-            <button type="submit" disabled={analyzing} className={`premium-analyze-btn ${analyzing ? 'is-scanning' : ''}`}>
-              {analyzing ? <RefreshCw className="spin" size={20} /> : <Search size={20} />}
-              <span>{analyzing ? 'SCANNING NODE...' : 'ANALYZE NOW'}</span>
-            </button>
-          </form>
-        </div>
-      </div>
+              <button type="submit" disabled={analyzing} className="refined-submit-btn">
+                 {analyzing ? <RefreshCw className="spin" size={18} /> : <Search size={18} />}
+                 <span>{analyzing ? 'SCANNING...' : 'ANALYZE'}</span>
+              </button>
+           </form>
+        </section>
 
-      <div className="analytics-main-layout">
-        <div className="analytics-content-scroller">
+        {/* DYNAMIC RESULTS HUB */}
+        <main className="refined-results-area">
           {analyzing && (
-            <div className="scan-protocol-overlay">
-               <div className="protocol-card">
-                  <Activity size={32} className="pulse-icon" />
-                  <h3>AUTHORIZED SCAN IN PROGRESS</h3>
-                  <div className="progress-container"><div className="progress-fill" style={{ width: `${scanProgress}%` }} /></div>
-                  <div className="protocol-steps">
-                     <div className={`step ${scanProgress > 10 ? 'done' : ''}`}><Shield size={14} /> Node Authorization</div>
-                     <div className={`step ${scanProgress > 40 ? 'done' : ''}`}><Database size={14} /> Dataset Fetching</div>
-                     <div className={`step ${scanProgress > 70 ? 'done' : ''}`}><Lock size={14} /> Cyber-Threat Classification</div>
-                  </div>
-                  <p className="protocol-wait">Establishing secure proxy connection to Instagram servers...</p>
+            <div className="refined-scanner-overlay">
+               <div className="scan-ripple"></div>
+               <Activity size={40} className="scan-pulse-icon" />
+               <div className="scan-meta-log">
+                 <span>{scanProgress}% COMPLETE</span>
+                 <p>Establishing secure socket tunnel to global nodes...</p>
                </div>
             </div>
           )}
 
-          {error && <div className="error-banner"><AlertTriangle /> {error}</div>}
-
           {profileData && (
-            <div className="profile-intel-card pulse-in">
-               <div className="forensic-header-group">
-                  <div className={`forensic-verdict-banner ${getForensicVerdict().class}`}>
+            <>
+              <div className="refined-profile-grid">
+                {/* MAIN PROFILE INFO */}
+                <div className="refined-card profile-main-card">
+                  <div className="refined-profile-top">
+                    <div className="refined-avatar-frame">
+                      <Fingerprint size={40} />
+                    </div>
+                    <div className="refined-profile-info">
+                      <h2>{profileData.fullName}</h2>
+                      <span className="refined-handle">@{profileData.username}</span>
+                      <button className="monitor-btn glass" onClick={handleMonitor}>
+                        <Radar size={14} /> LIVE MONITOR
+                      </button>
+                    </div>
+                    <div className="refined-trust-indicator">
+                      <div className="refined-gauge-circle" style={{ '--score': `${trustScore}%`, '--color': trustScore < 50 ? '#f43f5e' : '#10b981' }}>
+                        <span className="score-val">{trustScore}%</span>
+                      </div>
+                      <span className="gauge-label">TRUST INDEX</span>
+                    </div>
+                  </div>
+                  
+                  <div className="refined-profile-stats">
+                    <div className="stat-pill">
+                      <strong>{(profileData.followersCount || 0).toLocaleString()}</strong> 
+                      <span>Followers</span>
+                      {followerUpdateCount !== 0 && (
+                        <span className={`follower-delta ${followerUpdateCount > 0 ? 'plus' : 'minus'}`}>
+                          {followerUpdateCount > 0 ? `+${followerUpdateCount}` : followerUpdateCount}
+                        </span>
+                      )}
+                    </div>
+                    <div className="stat-pill">
+                      <strong>{(profileData.followsCount || 0).toLocaleString()}</strong> 
+                      <span>Following</span>
+                    </div>
+                    <div className="stat-pill">
+                      <strong>{(profileData.postsCount || scanResults.length || 0).toLocaleString()}</strong> 
+                      <span>Posts</span>
+                    </div>
+                    <div className="stat-pill purple">
+                      <strong>{analyzedCount} / {(profileData.postsCount || scanResults.length || 0).toLocaleString()}</strong> 
+                      <span>Analyzed</span>
+                    </div>
+                    <div className="stat-pill danger">
+                      <strong>{threatCount}</strong> 
+                      <span>Threats</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* LIVE EVENT MONITOR */}
+                <div className="refined-card live-events-card">
+                  <div className="card-header-v3">
+                    <Wifi size={16} className={isMonitoring ? 'text-safe pulse-slow' : ''} /> 
+                    LIVE MONITOR LOG
+                    <span className="live-status-pill real">REAL-TIME</span>
+                    {isMonitoring && (
+                      <span className={`live-status-pill ${isSyncing ? 'syncing' : 'active'}`}>
+                        {isSyncing ? 'SYNCING...' : 'ACTIVE'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="live-events-list">
+                    {liveEvents.length > 0 ? (
+                      liveEvents.map((event, i) => (
+                        <div key={i} className="live-event-item">
+                          <span className="event-time">{new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                          <span className="event-msg">{event.message}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="live-empty">
+                        <Activity size={32} />
+                        <p>{isMonitoring ? 'Waiting for network events...' : 'Activate Live Monitor to begin surveillance'}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ANALYTICS PREVIEW */}
+                <div className="refined-card charts-preview-card">
+                  <div className="card-header-v3"><TrendingUp size={16} /> THREAT DISTRIBUTION</div>
+                  <div className="mini-charts-grid">
+                    <ResponsiveContainer width="100%" height={150}>
+                      <BarChart data={severityData}>
+                        <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{display: 'none'}} />
+                        <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                          {severityData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="refined-verdict-box">
                     {getForensicVerdict().icon}
                     <span>{getForensicVerdict().label}</span>
                   </div>
-                  
-                  <button 
-                    className={`monitoring-toggle ${isMonitoring ? 'active' : ''}`}
-                    onClick={() => setIsMonitoring(!isMonitoring)}
-                  >
-                    {isMonitoring ? <Zap size={16} className="zap-pulse" /> : <MonitorPlay size={16} />}
-                    {isMonitoring ? 'LIVE MONITORING ON' : 'START LIVE MONITORING'}
-                  </button>
-               </div>
+                </div>
 
-               <div className="intel-header">
-                  <div className="intel-avatar"><Users size={32} /></div>
-                  <div className="intel-info">
-                     <h2>{profileData.fullName || 'Forensic Intelligence Node'}</h2>
-                     <span className="intel-handle">@{profileData.username}</span>
+                {/* FORENSIC INSIGHTS LIST */}
+                <div className="refined-card insights-list-card">
+                  <div className="card-header-v3"><Shield size={16} /> FORENSIC REASONING</div>
+                  <div className="refined-insights-scroll">
+                    {forensicInsights.map((insight, idx) => (
+                      <div key={idx} className={`refined-insight-item ${insight.type}`}>
+                        <div className="indicator-dot"></div>
+                        {insight.label}
+                      </div>
+                    ))}
                   </div>
-                  <div className="authenticity-metric">
-                     <div className="gauge-label"><Fingerprint size={16} /> Trust Score</div>
-                     <div className="gauge-value" style={{ color: trustScore < 50 ? '#dc2626' : '#16a34a' }}>{trustScore}%</div>
-                     <div className="gauge-bar"><div className="gauge-fill" style={{ width: `${trustScore}%`, background: trustScore < 50 ? '#dc2626' : '#16a34a' }} /></div>
-                  </div>
-               </div>
+                </div>
+              </div>
 
-               <div className="bio-box active">
-                  <div className="bio-label"><Quote size={12} /> BIOGRAPHY INTEL</div>
-                  <p className="intel-bio">{profileData.biography || 'Biological signature captured via forensic node.'}</p>
-               </div>
-               
-               <div className="intel-stats">
-                  <div className={`i-stat ${followerUpdateCount > 0 ? 'highlight-sync' : ''}`}>
-                    <strong>{profileData.followersCount?.toLocaleString()}</strong>
-                    <span>
-                      FOLLOWERS 
-                      {followerUpdateCount > 0 && <span className="delta-stat">+{followerUpdateCount} <ArrowUpRight size={10} /></span>}
-                    </span>
+              {/* FULL INTELLIGENCE STREAM */}
+              {scanResults.length > 0 && (
+                <div className="intelligence-stream-section glass pulse-in">
+                  <div className="card-header-v3">
+                    <Globe size={18} /> 
+                    FULL INTELLIGENCE STREAM 
+                    <div className="analysis-progress-meta">
+                      <span>{analyzedCount} / {scanResults.length} ANALYZED</span>
+                      <div className="progress-bar-mini">
+                        <div className="progress-fill" style={{ width: `${(analyzedCount / scanResults.length) * 100}%` }}></div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="i-stat"><strong>{profileData.followsCount?.toLocaleString()}</strong><span>FOLLOWING</span></div>
-                  <div className="i-stat threat"><strong>{scanResults.length}</strong><span>POSTS ANALYZED</span></div>
-                  <div className={`i-stat ${threatCount > 0 ? 'danger-blink' : ''}`}>
-                     <strong>{threatCount}</strong>
-                     <span>THREATS FOUND</span>
-                  </div>
-               </div>
-               
-               <div className="forensic-insights-box">
-                  <div className="insights-header"><ListFilter size={14} /> Forensic Insights & Reasoning</div>
-                  <div className="insights-list">
-                     {forensicInsights.map((insight, idx) => (
-                        <div key={idx} className={`insight-item ${insight.type}`}>
-                           {insight.type === 'safe' ? <CheckCircle size={14} /> : <Info size={14} />}
-                           {insight.label}
-                        </div>
-                     ))}
-                     
-                     {flaggedPosts.length > 0 && (
-                        <div className="flagged-elements-section">
-                           <div className="elements-title"><Eye size={12} /> Elements Triggering AI Detection:</div>
-                           <div className="elements-scroll-premium">
-                              <div className="incidents-grid-mini">
-                                 {flaggedPosts.map((post, pIdx) => (
-                                    <IncidentCard key={pIdx} incident={post} />
-                                 ))}
+                  <div className="intel-posts-grid">
+                    {scanResults.map((post, idx) => {
+                      const isAnalyzed = idx < analyzedCount;
+                      return (
+                        <div key={idx} className={`intel-post-item ${isAnalyzed ? post.predicted_label : 'analyzing'}`}>
+                          {!isAnalyzed ? (
+                            <div className="post-analyzing-overlay">
+                              <RefreshCw size={24} className="spin" />
+                              <span>ANALYZING SIGNATURES...</span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="post-verdict-badge">
+                                {post.predicted_label === 'normal' ? <ShieldCheck size={12} /> : <AlertTriangle size={12} />}
+                                {post.predicted_label.toUpperCase()}
                               </div>
-                           </div>
+                              <p className="post-body">{post.text}</p>
+                              <div className="post-meta-row">
+                                <span className="meta-tag">{(post.confidence * 100).toFixed(1)}% MATCH</span>
+                                <span className={`meta-tag sev ${post.severity}`}>{post.severity.toUpperCase()}</span>
+                              </div>
+                            </>
+                          )}
                         </div>
-                     )}
+                      );
+                    })}
                   </div>
-               </div>
-            </div>
+                </div>
+              )}
+            </>
           )}
 
-          <div className="analytics-grid">
-            <div className="card">
-              <div className="card-header"><h2 className="card-title"><TrendingUp size={20} /> Severity Analytics</h2></div>
-              <div className="chart-container">
-                 <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={severityData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} /><YAxis axisLine={false} tickLine={false} /><Tooltip />
-                      <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={40}>
-                        {severityData.map((e, i) => <Cell key={i} fill={e.color} />)}
-                      </Bar>
-                    </BarChart>
-                 </ResponsiveContainer>
-              </div>
-            </div>
-            <div className="card">
-              <div className="card-header"><h2 className="card-title"><Fingerprint size={20} /> Categorical Threat Map</h2></div>
-              <div className="chart-container">
-                 <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie data={categoryData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} dataKey="value" label={({ name }) => name}>
-                        {categoryData.map((e, i) => <Cell key={i} fill={e.color} />)}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                 </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* INVESTIGATION HISTORY SIDEBAR */}
-        <div className="history-sidebar">
-           <div className="history-header">
-              <History size={18} />
-              <span>PAST INVESTIGATIONS</span>
-           </div>
-           <div className="history-list">
-              {investigationHistory.length > 0 ? (
-                investigationHistory.map((item, idx) => (
-                  <div key={idx} className="history-item" onClick={() => handleAnalyze(item.username)}>
-                    <div className="h-top">
-                       <span className="h-username">@{item.username}</span>
-                       <span className={`h-score ${item.trust_score < 50 ? 'danger' : 'safe'}`}>
-                          {item.trust_score}%
-                       </span>
-                    </div>
-                    <div className="h-meta">
-                       <Clock size={10} /> {new Date(item.timestamp).toLocaleDateString()}
-                    </div>
-                    <div className="h-stats">
-                       <span>{item.threats_found} Threats</span> | <span>{item.total_posts} Posts</span>
-                    </div>
+          {/* HISTORY ARCHIVE */}
+          {!analyzing && !profileData && (
+            <div className="refined-history-section">
+              <div className="section-title"><History size={16} /> RECENT INVESTIGATIONS</div>
+              <div className="refined-history-grid">
+                {investigationHistory.slice(0, 4).map((h, i) => (
+                  <div key={i} className="refined-history-item" onClick={() => handleAnalyze(h.username)}>
+                    <span className="h-user">@{h.username}</span>
+                    <span className="h-date">{new Date(h.timestamp).toLocaleDateString()}</span>
+                    <span className={`h-score-tag ${h.trust_score < 50 ? 'danger' : 'safe'}`}>{h.trust_score}%</span>
                   </div>
-                ))
-              ) : (
-                <div className="history-empty">No past intelligence reports found in archive.</div>
-              )}
-           </div>
-        </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </main>
       </div>
     </div>
   )

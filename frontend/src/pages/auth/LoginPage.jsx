@@ -88,26 +88,32 @@ export default function LoginPage() {
                 <Mail className="input-icon" size={18} />
                 <input 
                   type="email" 
+                  id="email"
+                  name="email"
                   className="auth-input" 
                   placeholder="researcher@intel.hub" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  autoComplete="email"
                 />
               </div>
             </div>
 
             <div className="form-group">
-              <label>Access Key</label>
+              <label htmlFor="password">Access Key</label>
               <div className="input-wrapper">
                 <Lock className="input-icon" size={18} />
                 <input 
                   type="password" 
+                  id="password"
+                  name="password"
                   className="auth-input" 
                   placeholder="••••••••" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  autoComplete="current-password"
                 />
               </div>
             </div>

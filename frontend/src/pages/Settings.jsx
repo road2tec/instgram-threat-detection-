@@ -1,14 +1,15 @@
 import React from 'react';
 import { User, Shield, Key, Bell, Activity, CheckCircle, Smartphone } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import './Settings.css';
 
 export default function Settings() {
-  const user = {
-    name: "Punam Channe",
-    email: "punamchanne51@gmail.com",
-    role: "System Administrator",
-    lastLogin: "March 27, 2026 - 15:42"
-  };
+  const { user } = useAuth();
+  
+  // Format role and date
+  const userRole = user?.role === 'admin' ? 'System Administrator' : 'Forensic Investigator';
+  const lastActive = user?.last_login ? new Date(user.last_login).toLocaleString() : 'Just now';
+  const fullName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'User Profile';
 
   return (
     <div className="settings-container">
@@ -25,9 +26,9 @@ export default function Settings() {
               <User size={40} />
             </div>
             <div className="profile-info">
-              <h2>{user.name}</h2>
-              <span className="user-role">{user.role}</span>
-              <p className="user-email">{user.email}</p>
+              <h2>{fullName}</h2>
+              <span className="user-role">{userRole}</span>
+              <p className="user-email">{user?.email}</p>
             </div>
             <button className="edit-profile-btn">Edit Profile</button>
           </div>
@@ -35,7 +36,7 @@ export default function Settings() {
           <div className="profile-details-list">
             <div className="detail-item">
               <span className="label">Last Active</span>
-              <span className="value">{user.lastLogin}</span>
+              <span className="value">{lastActive}</span>
             </div>
             <div className="detail-item">
               <span className="label">Verification Status</span>

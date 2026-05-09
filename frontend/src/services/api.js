@@ -1,25 +1,80 @@
 /* High-Performance Dynamic API Service with Robust Fallbacks */
 import axios from 'axios';
 
-const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8080';
-const SIMULATOR_API_URL = import.meta.env.VITE_SIMULATOR_API_URL || 'http://localhost:5003';
+import Cookies from 'js-cookie';
 
-const backendApi = axios.create({ baseURL: BACKEND_API_URL + '/api', timeout: 90000 });
-const simulatorApi = axios.create({ baseURL: SIMULATOR_API_URL, timeout: 5000 });
+const backendApi = axios.create({ 
+  baseURL: '/api', 
+  timeout: 90000,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+const simulatorApi = axios.create({ baseURL: '/feed', timeout: 10000 });
+
+backendApi.interceptors.request.use(config => {
+  const token = localStorage.getItem('access_token');
+  
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  } else {
+    // Only warn if it's NOT an auth request
+    const isAuthRequest = config.url.includes('/auth/');
+    if (!isAuthRequest) {
+      console.warn(`[AUTH] No token found in LocalStorage for: ${config.url}`);
+    }
+  }
+  
+  return config;
+}, error => {
+  return Promise.reject(error);
+});
+
+// Add response interceptor to handle global errors (like 401)
+backendApi.interceptors.response.use(
+  response => response,
+  error => {
+    const originalRequest = error.config;
+    
+    if (error.response && error.response.status === 401) {
+      const isAuthRequest = originalRequest.url.includes('/auth/login') || 
+                            originalRequest.url.includes('/auth/verify');
+      
+      // If we have a token but got a 401, maybe it's a fluke? 
+      // Only logout if we are not already on the login page
+      if (!isAuthRequest && !window.location.pathname.includes('/login')) {
+        console.warn("Unauthorized access detected at " + originalRequest.url);
+        
+        // Check if token actually exists before wiping
+        const hasToken = !!localStorage.getItem('access_token');
+        if (!hasToken) {
+           console.error("Critical: No token found. Redirecting...");
+           window.location.href = '/login?expired=true';
+        } else {
+           // Token exists but server said 401. Maybe session really expired?
+           // We'll give it one chance to refresh or just stay put if it's a minor request
+           if (originalRequest.url.includes('/incidents') || originalRequest.url.includes('/dashboard')) {
+              localStorage.removeItem('access_token');
+              window.location.href = '/login?expired=true';
+           }
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Permanent Static Fallbacks to prevent white screens
 const STATIC_FALLBACKS = {
-  incidents: [
-    { id: 'F1', text: 'Suspicious login attempt from Lagos, Nigeria. Secure your account now.', timestamp: new Date().toISOString(), prediction: 'phishing', confidence: 0.98, severity: 'critical', category: 'threat', isThreat: true },
-    { id: 'F2', text: 'You won a $500 gift card! Click to claim: amzn-rewards.info', timestamp: new Date().toISOString(), prediction: 'phishing', confidence: 0.95, severity: 'high', category: 'threat', isThreat: true }
-  ],
-  stats: { total: 1248, by_severity: { critical: 12, high: 22, medium: 45, low: 1169 }, by_prediction: { phishing: 18, malware: 16, normal: 1214 }, classification_accuracy: 94.8 }
+  incidents: [],
+  stats: { total: 0, by_severity: { critical: 0, high: 0, medium: 0, low: 0 }, by_prediction: { phishing: 0, malware: 0, normal: 0 }, classification_accuracy: 0 }
 };
 
 export const incidentService = {
   getIncidents: async (params = {}) => {
     try {
-      const response = await backendApi.get('/incidents', { params });
+      const response = await backendApi.get('/incidents/', { params });
       return response.data;
     } catch (err) {
       return { data: STATIC_FALLBACKS.incidents };
@@ -27,7 +82,7 @@ export const incidentService = {
   },
   getStats: async () => {
     try {
-      const response = await backendApi.get('/analysis/stats');
+      const response = await backendApi.get('/analysis/stats/');
       const s = response.data;
       return { data: { total: s.total_posts, by_severity: s.severity_distribution, by_prediction: s.predictions_by_label, classification_accuracy: 94.8 } };
     } catch (err) {
@@ -35,7 +90,7 @@ export const incidentService = {
     }
   },
   refreshIncidents: async () => {
-    try { return await simulatorApi.post('/feed/generate'); } catch(e) { return { success: false }; }
+    try { return await simulatorApi.post('/generate'); } catch(e) { return { success: false }; }
   }
 };
 
@@ -46,36 +101,59 @@ export const analysisService = {
   getTimeline: async () => { try { return await backendApi.get('/analysis/timeline'); } catch(e) { return { success: true, data: [] }; } },
   analyzeProfile: async (username) => {
     try {
-      return (await backendApi.post('/analysis/analyze-profile', { username })).data;
+      const cacheBuster = Date.now();
+      return (await backendApi.post(`/analysis/analyze-profile/?v=${cacheBuster}`, { username })).data;
     } catch(e) {
-      return { success: true, data: STATIC_FALLBACKS.incidents, threats_detected: 2 };
+      console.error("Analysis API Failed:", e);
+      return { 
+        success: false, 
+        message: 'Forensic Node Connection Timeout. The scraper is taking longer than expected. Please retry in a moment.',
+        data: [], 
+        threats_detected: 0 
+      };
     }
   },
   analyzeText: async (text) => {
     try {
-      return (await backendApi.post('/analysis/analyze-text', { text })).data;
+      return (await backendApi.post('/analysis/analyze-text/', { text })).data;
     } catch(e) {
       return { success: false, message: 'Text analysis failed.' };
     }
   },
   saveHistory: async (data) => {
     try {
-      return (await backendApi.post('/analysis/save-history', data)).data;
+      return (await backendApi.post('/analysis/save-history/', data)).data;
     } catch(e) { return { success: false }; }
   },
   getHistory: async () => {
     try {
-      return (await backendApi.get('/analysis/history')).data;
+      return (await backendApi.get('/analysis/history/')).data;
     } catch(e) { return { success: true, data: [] }; }
+  },
+  monitorProfile: async (username) => {
+    try {
+      return (await backendApi.post('/analysis/monitor-profile/', { username })).data;
+    } catch(e) { return { success: false }; }
+  },
+  getMonitoredTargets: async () => {
+    try {
+      return (await backendApi.get('/analysis/monitored-targets/')).data;
+    } catch(e) { return { success: false, data: [] }; }
+  },
+  getLiveStream: async (username) => {
+    try {
+      return (await backendApi.get(`/analysis/live-stream/${username}`)).data;
+    } catch(e) { return { success: false, events: [] }; }
   }
 };
 
 export const authService = {
   register: async (u) => (await backendApi.post('/auth/register', u)).data,
-  login: async (e, p) => (await backendApi.post('/auth/login', { email: e, password: p })).data,
+  login: async (e, p) => (await backendApi.post('/auth/login/', { email: e, password: p })).data,
   getProfile: async (t) => (await backendApi.get('/auth/profile', { headers: { Authorization: `Bearer ${t}` } })).data,
   logout: async () => ({ success: true }),
-  verify: async (t) => (await backendApi.get('/auth/verify', { headers: { Authorization: `Bearer ${t}` } })).data
+  verify: async (t) => (await backendApi.get('/auth/verify/', { headers: { Authorization: `Bearer ${t}` } })).data,
+  refreshToken: async (token) => (await backendApi.post('/auth/refresh', {}, { headers: { Authorization: `Bearer ${token}` } })).data
 };
 
 export default backendApi;

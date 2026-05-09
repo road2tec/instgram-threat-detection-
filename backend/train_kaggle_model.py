@@ -15,7 +15,7 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-print("🔥 Kaggle Dataset Processor")
+print("[MODEL] Kaggle Dataset Processor")
 print("=" * 60)
 
 # Configuration
@@ -28,13 +28,13 @@ def load_kaggle_dataset():
     """
     Load the prepared Instagram cyber dataset
     """
-    print(f"\n1️⃣ Loading Instagram Cyber Dataset...")
+    print(f"\n[STEP 1] Loading Instagram Cyber Dataset...")
     
     if os.path.exists(KAGGLE_DATA_PATH):
         print(f"   Loading: {KAGGLE_DATA_PATH}")
         df = pd.read_csv(KAGGLE_DATA_PATH)
-        print(f"   ✅ Loaded {len(df)} rows")
-        print(f"   📊 Columns: {list(df.columns)}")
+        print(f"   [SUCCESS] Loaded {len(df)} rows")
+        print(f"     Columns: {list(df.columns)}")
         return df
     else:
         raise FileNotFoundError(f"Prepared dataset not found at {KAGGLE_DATA_PATH}. Please run prepare_ig_dataset.py first.")
@@ -43,7 +43,7 @@ def identify_columns(df):
     """
     Identify text and label columns
     """
-    print("\n2️⃣ Identifying columns...")
+    print("\n[STEP 2] Identifying columns...")
 
     # Common text column names
     text_columns = ['text', 'message', 'content', 'description', 'url', 'email', 'subject']
@@ -81,8 +81,8 @@ def identify_columns(df):
             text_col = df.columns[0]
             label_col = df.columns[1]
 
-    print(f"   ✅ Text column: {text_col}")
-    print(f"   ✅ Label column: {label_col}")
+    print(f"     Text column: {text_col}")
+    print(f"   [SUCCESS] Label column: {label_col}")
 
     return text_col, label_col
 
@@ -90,7 +90,7 @@ def clean_and_prepare(df, text_col, label_col):
     """
     Clean and prepare dataset
     """
-    print("\n3️⃣ Cleaning and preparing data...")
+    print("\n[STEP 3] Cleaning and preparing data...")
 
     # Remove missing values
     df = df.dropna(subset=[text_col, label_col])
@@ -99,7 +99,7 @@ def clean_and_prepare(df, text_col, label_col):
     df[text_col] = df[text_col].astype(str)
 
     # Show label distribution
-    print(f"\n   📊 Label Distribution:")
+    print(f"\n     Label Distribution:")
     print(df[label_col].value_counts())
 
     # Map labels to standard format if needed
@@ -124,8 +124,8 @@ def clean_and_prepare(df, text_col, label_col):
     X = df[text_col]
     y = df[label_col]
 
-    print(f"\n   ✅ Final dataset size: {len(df)}")
-    print(f"   📊 Classes: {', '.join(y.unique())}")
+    print(f"\n     Final dataset size: {len(df)}")
+    print(f"     Classes: {', '.join(y.unique())}")
 
     return X, y
 
@@ -133,18 +133,18 @@ def train_model(X, y):
     """
     Train Random Forest model
     """
-    print("\n4️⃣ Training model...")
+    print("\n[STEP 4] Training model...")
 
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    print(f"   📚 Training samples: {len(X_train)}")
-    print(f"   📚 Test samples: {len(X_test)}")
+    print(f"     Training samples: {len(X_train)}")
+    print(f"     Test samples: {len(X_test)}")
 
     # TF-IDF Vectorization
-    print("\n   🔧 Creating TF-IDF features...")
+    print("\n     Creating TF-IDF features...")
     vectorizer = TfidfVectorizer(
         max_features=1000,
         ngram_range=(1, 2),
@@ -155,10 +155,10 @@ def train_model(X, y):
     X_train_tfidf = vectorizer.fit_transform(X_train)
     X_test_tfidf = vectorizer.transform(X_test)
 
-    print(f"   ✅ Feature matrix: {X_train_tfidf.shape}")
+    print(f"     Feature matrix: {X_train_tfidf.shape}")
 
     # Train Random Forest
-    print("\n   🌲 Training Random Forest...")
+    print("\n     Training Random Forest...")
     rf_model = RandomForestClassifier(
         n_estimators=100,
         max_depth=10,
@@ -169,16 +169,16 @@ def train_model(X, y):
     rf_model.fit(X_train_tfidf, y_train)
 
     # Evaluate
-    print("\n5️⃣ Evaluating model...")
+    print("\n[STEP 5] Evaluating model...")
     y_pred = rf_model.predict(X_test_tfidf)
     accuracy = accuracy_score(y_test, y_pred)
 
-    print(f"\n   🎯 Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)")
+    print(f"\n     Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)")
 
-    print("\n   📋 Classification Report:")
+    print("\n     Classification Report:")
     print(classification_report(y_test, y_pred))
 
-    print("\n   📊 Confusion Matrix:")
+    print("\n     Confusion Matrix:")
     print(confusion_matrix(y_test, y_pred))
 
     return rf_model, vectorizer, accuracy, X_test, y_test, y_pred
@@ -187,23 +187,23 @@ def save_models(rf_model, vectorizer):
     """
     Save trained models
     """
-    print("\n6️⃣ Saving models...")
+    print("\n[STEP 6] Saving models...")
 
     # Save model
     with open(OUTPUT_MODEL_PATH, 'wb') as f:
         pickle.dump(rf_model, f)
-    print(f"   ✅ Model saved: {OUTPUT_MODEL_PATH}")
+    print(f"     Model saved: {OUTPUT_MODEL_PATH}")
 
     # Save vectorizer
     with open(OUTPUT_VECTORIZER_PATH, 'wb') as f:
         pickle.dump(vectorizer, f)
-    print(f"   ✅ Vectorizer saved: {OUTPUT_VECTORIZER_PATH}")
+    print(f"     Vectorizer saved: {OUTPUT_VECTORIZER_PATH}")
 
 def test_predictions(rf_model, vectorizer):
     """
     Test with sample predictions
     """
-    print("\n7️⃣ Testing predictions...")
+    print("\n[STEP 7] Testing predictions...")
 
     sample_texts = [
         "urgent payment required click link verify account",
@@ -225,7 +225,7 @@ def save_visualizations(df, label_col, y_test, y_pred, rf_model, vectorizer):
     """
     Save training visualizations
     """
-    print("\n📊 Saving visualizations...")
+    print("\n  Saving visualizations...")
     os.makedirs(PLOT_OUTPUT_DIR, exist_ok=True)
 
     # 1. Label Distribution
@@ -236,7 +236,7 @@ def save_visualizations(df, label_col, y_test, y_pred, rf_model, vectorizer):
     plt.ylabel('Count')
     plt.tight_layout()
     plt.savefig(os.path.join(PLOT_OUTPUT_DIR, 'label_distribution.png'))
-    print(f"   ✅ Label distribution plot saved: {PLOT_OUTPUT_DIR}label_distribution.png")
+    print(f"     Label distribution plot saved: {PLOT_OUTPUT_DIR}label_distribution.png")
 
     # 2. Confusion Matrix Heatmap
     cm = confusion_matrix(y_test, y_pred)
@@ -249,7 +249,7 @@ def save_visualizations(df, label_col, y_test, y_pred, rf_model, vectorizer):
     plt.ylabel('True Label')
     plt.tight_layout()
     plt.savefig(os.path.join(PLOT_OUTPUT_DIR, 'random_forest_confusion_matrix.png'))
-    print(f"   ✅ Confusion Matrix plot saved: {PLOT_OUTPUT_DIR}random_forest_confusion_matrix.png")
+    print(f"     Confusion Matrix plot saved: {PLOT_OUTPUT_DIR}random_forest_confusion_matrix.png")
 
     # 3. Feature Importance (Top Words)
     import numpy as np
@@ -264,7 +264,7 @@ def save_visualizations(df, label_col, y_test, y_pred, rf_model, vectorizer):
     plt.xlabel('Relative Importance')
     plt.tight_layout()
     plt.savefig(os.path.join(PLOT_OUTPUT_DIR, 'feature_importance.png'))
-    print(f"   ✅ Feature Importance plot saved: {PLOT_OUTPUT_DIR}feature_importance.png")
+    print(f"     Feature Importance plot saved: {PLOT_OUTPUT_DIR}feature_importance.png")
 
 # Main execution
 if __name__ == "__main__":
@@ -291,11 +291,11 @@ if __name__ == "__main__":
         test_predictions(rf_model, vectorizer)
 
         print("\n" + "=" * 60)
-        print("✅ Model training complete!")
-        print(f"🎯 Final Accuracy: {accuracy:.2%}")
+        print("[SUCCESS] Model training complete!")
+        print(f"  Final Accuracy: {accuracy:.2%}")
         print("=" * 60)
 
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        print(f"\n[ERROR] Model Training Failed: {e}")
         import traceback
         traceback.print_exc()

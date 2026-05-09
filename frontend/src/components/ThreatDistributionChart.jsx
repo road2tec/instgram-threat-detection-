@@ -11,7 +11,7 @@ const COLORS = {
 function ThreatDistributionChart({ data }) {
   // Transform the data for the pie chart
   const chartData = Object.entries(data || {}).map(([key, value]) => ({
-    name: key.charAt(0).toUpperCase() + key.slice(1),
+    name: key.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
     value: value,
     color: COLORS[key] || COLORS.unknown
   })).filter(item => item.value > 0)

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Shield, User, Mail, Lock, UserPlus, RefreshCw, AlertTriangle, ArrowLeft, Brain, Activity, Globe } from 'lucide-react';
+import { Shield, User, Mail, Lock, UserPlus, RefreshCw, AlertTriangle, ArrowLeft, Brain, Activity, Globe, CheckCircle } from 'lucide-react';
 import './Auth.css';
 
 export default function RegisterPage() {
@@ -9,6 +9,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   
   const { register } = useAuth();
@@ -17,14 +18,34 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
     
     try {
-      const result = await register(name, email, password);
+      // Split name into first and last name
+      const nameParts = name.trim().split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Investigator';
+
+      const result = await register({
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        password
+      });
+
       if (result.success) {
-        navigate('/login');
+        setSuccess('Account created successfully! Redirecting to login...');
+        // Clear form
+        setName('');
+        setEmail('');
+        setPassword('');
+        // Redirect after a short delay so user can see the message
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
       } else {
-        setError(result.message || 'Registration failed. Check your data.');
+        setError(result.error || 'Registration failed. Check your data.');
       }
     } catch (err) {
       setError('Connection refused. Is the Node server online?');
@@ -39,7 +60,7 @@ export default function RegisterPage() {
       <div className="auth-side-panel">
         <div className="side-panel-content">
           <div className="side-panel-badge">
-            <Shield size={14} />
+            <Shield size={14} className="brand-shield" />
             <span>94.15% ML Classification Accuracy</span>
           </div>
           <h3>Join the Global <br />Intelligence Network</h3>
@@ -79,6 +100,13 @@ export default function RegisterPage() {
             <div className="error-msg">
               <AlertTriangle size={16} />
               {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="success-msg">
+              <CheckCircle size={16} />
+              {success}
             </div>
           )}
 

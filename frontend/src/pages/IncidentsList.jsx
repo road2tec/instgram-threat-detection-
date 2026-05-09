@@ -17,7 +17,17 @@ function IncidentsList() {
     try {
       if (showLoading) setLoading(true)
       const data = await incidentService.getIncidents()
-      setIncidents(data.data || [])
+      const results = data.data || []
+      setIncidents(results)
+      
+      // Auto-populate for new users if feed is empty
+      if (results.length === 0 && showLoading) {
+        console.log("Feed empty. Injecting live forensic data...");
+        await incidentService.refreshIncidents();
+        // Brief delay then fetch again
+        setTimeout(() => fetchIncidents(false), 1500);
+      }
+
       setLastRefreshed(new Date())
       setError(null)
     } catch (err) {
@@ -27,12 +37,12 @@ function IncidentsList() {
     }
   }
 
-  // Live Sync Effect: Poll every 8 seconds for new simulator data
+  // Live Sync Effect: Poll every 5 seconds for new simulator data
   useEffect(() => {
     fetchIncidents()
     const pollInterval = setInterval(() => {
       fetchIncidents(false); // Background refresh
-    }, 8000)
+    }, 5000)
     return () => clearInterval(pollInterval)
   }, [])
 

@@ -111,26 +111,26 @@ export function AuthProvider({ children }) {
     expires: 30 // 30 days
   };
 
-  // Save tokens to cookies
+  // Save tokens to storage
   const saveTokensToStorage = (accessToken, refreshToken) => {
     if (accessToken) {
-      Cookies.set('access_token', accessToken, { ...COOKIE_OPTIONS, expires: 1 }); // 1 day
+      localStorage.setItem('access_token', accessToken);
     }
     if (refreshToken) {
       Cookies.set('refresh_token', refreshToken, COOKIE_OPTIONS); // 30 days
     }
   };
 
-  // Remove tokens from cookies
+  // Remove tokens from storage
   const removeTokensFromStorage = () => {
-    Cookies.remove('access_token');
+    localStorage.removeItem('access_token');
     Cookies.remove('refresh_token');
   };
 
-  // Get tokens from cookies
+  // Get tokens from storage
   const getTokensFromStorage = () => {
     return {
-      accessToken: Cookies.get('access_token'),
+      accessToken: localStorage.getItem('access_token'),
       refreshToken: Cookies.get('refresh_token')
     };
   };
@@ -153,12 +153,13 @@ export function AuthProvider({ children }) {
       return { success: true, user: data.user };
 
     } catch (error) {
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Login failed';
       dispatch({
         type: AUTH_ACTIONS.LOGIN_FAILURE,
-        payload: error.response?.data?.error || error.message || 'Login failed'
+        payload: errorMsg
       });
 
-      return { success: false, error: error.response?.data?.error || error.message || 'Login failed' };
+      return { success: false, error: errorMsg };
     }
   };
 
@@ -180,12 +181,13 @@ export function AuthProvider({ children }) {
       return { success: true, user: data.user };
 
     } catch (error) {
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Registration failed';
       dispatch({
         type: AUTH_ACTIONS.REGISTER_FAILURE,
-        payload: error.response?.data?.error || error.message || 'Registration failed'
+        payload: errorMsg
       });
 
-      return { success: false, error: error.response?.data?.error || error.message || 'Registration failed' };
+      return { success: false, error: errorMsg };
     }
   };
 
@@ -365,4 +367,4 @@ export function ProtectedRoute({ children }) {
   return children;
 }
 
-export default AuthContext;
+export { AuthContext };

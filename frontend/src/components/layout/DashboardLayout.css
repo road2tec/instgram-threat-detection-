@@ -1,57 +1,62 @@
-/* Subtle Clean Minimalist Dashboard Layout */
-:root {
-  --bg-main: #f8fafc;
-  --bg-sidebar: #ffffff;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --accent: #3b82f6;
-  --border: #e2e8f0;
-}
+/* Premium Cyber-Violet Dashboard Layout */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap');
 
 .dashboard-layout {
   display: flex;
   min-height: 100vh;
   width: 100vw;
-  background-color: var(--bg-main);
-  color: var(--text-primary);
-  font-family: 'Inter', system-ui, sans-serif;
+  background-color: transparent; /* Allow global grid to show */
+  color: #f1f5f9;
+  font-family: 'Outfit', sans-serif;
+  position: relative;
+  overflow-x: hidden;
 }
 
 .dashboard-main {
   flex: 1;
-  padding: 2rem 3rem;
+  padding: 2.5rem 4rem;
   overflow-y: auto;
+  position: relative;
+  z-index: 1;
+  background-image: 
+    linear-gradient(rgba(139, 92, 246, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 92, 246, 0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
 }
 
-.dashboard-content-wrapper {
+.dashboard-content {
   max-width: 1600px;
   margin: 0 auto;
 }
 
-/* Page Header - Clean & Simple */
-.dashboard-header {
-  margin-bottom: 3rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.page-title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.page-description {
-  color: var(--text-secondary);
-  font-size: 1rem;
-}
-
-/* Fullscreen toggle - Hidden or subtle */
+/* Immersive Fullscreen Toggle */
 .fullscreen-toggle-btn {
-  display: none; /* Keep it clean */
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1001;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fullscreen-toggle-btn:hover {
+  background: #8b5cf6;
+  color: white;
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
 }
 
 @media (max-width: 1024px) {
   .dashboard-layout { flex-direction: column; }
+  .dashboard-main { padding: 1.5rem; }
 }

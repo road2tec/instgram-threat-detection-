@@ -15,20 +15,20 @@ import pickle
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-print("🌲 Random Forest Classifier for Cyber Threat Classification")
+print("[MODEL] Random Forest Classifier for Cyber Threat Classification")
 print("=" * 60)
 
 # Load and prepare data
-print("\n1️⃣ Loading and preparing data...")
+print("\n[STEP 1] Loading and preparing data...")
 df = pd.read_csv('data/cyber_threats_ml_ready.csv')
 X = df['text']
 y = df['label']
 
-print(f"   ✅ Loaded {len(df)} samples")
-print(f"   📊 Classes: {', '.join(y.unique())}")
+print(f"   [SUCCESS] Loaded {len(df)} samples")
+print(f"   [CLASSES] Classes: {', '.join(y.unique())}")
 
 # Split dataset (80% train, 20% test)
-print("\n2️⃣ Splitting dataset...")
+print("\n[STEP 2] Splitting dataset...")
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
@@ -37,7 +37,7 @@ print(f"   ✅ Training samples: {len(X_train)}")
 print(f"   ✅ Test samples: {len(X_test)}")
 
 # Create TF-IDF features
-print("\n3️⃣ Creating TF-IDF features...")
+print("\n[STEP 3] Creating TF-IDF features...")
 vectorizer = TfidfVectorizer(
     max_features=1000,
     ngram_range=(1, 2),
@@ -52,7 +52,7 @@ print(f"   ✅ Feature matrix shape: {X_train_tfidf.shape}")
 print(f"   📚 Vocabulary size: {len(vectorizer.vocabulary_)}")
 
 # Step 2: Train Random Forest model on TF-IDF features
-print("\n4️⃣ Training Random Forest Classifier...")
+print("\n[STEP 4] Training Random Forest Classifier...")
 rf_classifier = RandomForestClassifier(
     n_estimators=100,       # Number of trees
     random_state=42,        # For reproducibility
@@ -73,14 +73,14 @@ rf_classifier.fit(X_train_tfidf, y_train)
 print(f"   ✅ Random Forest model trained successfully!")
 
 # Step 3: Predict on test data
-print("\n5️⃣ Making predictions on test data...")
+print("\n[STEP 5] Making predictions on test data...")
 y_pred = rf_classifier.predict(X_test_tfidf)
 y_pred_proba = rf_classifier.predict_proba(X_test_tfidf)
 
 print(f"   ✅ Predictions completed for {len(y_test)} samples")
 
 # Step 4: Print accuracy
-print("\n6️⃣ Model Performance Metrics:")
+print("\n[STEP 6] Model Performance Metrics:")
 print("=" * 60)
 
 # Calculate accuracy
@@ -107,7 +107,7 @@ for i, true_label in enumerate(classes):
     print()
 
 # Print classification report
-print(f"\n📋 CLASSIFICATION REPORT:")
+print(f"\n[REPORT] CLASSIFICATION REPORT:")
 report = classification_report(y_test, y_pred)
 print(report)
 

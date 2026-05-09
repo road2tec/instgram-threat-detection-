@@ -36,7 +36,7 @@ class IncidentService:
         """Hydrate the cache from local JSON storage on startup"""
         if os.path.exists(self._STORAGE_PATH):
             try:
-                with open(self._STORAGE_PATH, 'r') as f:
+                with open(self._STORAGE_PATH, 'r', encoding='utf-8') as f:
                     stored_data = json.load(f)
                     loaded = []
                     for item in stored_data:
@@ -51,12 +51,22 @@ class IncidentService:
                         incident.severity = item.get('severity', 'low')
                         incident.category = item.get('category', 'normal')
                         incident.tags = item.get('tags', [])
+                        incident.user_id = item.get('user_id')
                         loaded.append(incident)
                     
                     IncidentService.incidents_cache = loaded
-                    print(f"📂 Persistent Storage: Loaded {len(loaded)} records from disk.")
+                    print(f"[STORAGE] Persistent Storage: Loaded {len(loaded)} records from disk.")
+                
+                # Bootstrap with a welcome incident if totally empty
+                if not IncidentService.incidents_cache:
+                    self.add_incident_data({
+                        'text': 'Cyber-Violet System Initialized. Forensic monitoring nodes are now active and scanning global clusters.',
+                        'username': 'SYSTEM-CORE',
+                        'severity': 'low',
+                        'predicted_label': 'normal'
+                    })
             except Exception as e:
-                print(f"⚠️ Persistence Load Error: {str(e)}")
+                print(f"[ERROR] Persistence Load Error: {str(e)}")
 
     def _save_to_disk(self):
         """Commit current cache state to physical disk"""
@@ -66,12 +76,12 @@ class IncidentService:
                 if isinstance(item.get('published_date'), datetime):
                     item['published_date'] = item['published_date'].isoformat()
             
-            with open(self._STORAGE_PATH, 'w') as f:
-                json.dump(temp_list, f, indent=4)
+            with open(self._STORAGE_PATH, 'w', encoding='utf-8') as f:
+                json.dump(temp_list, f, indent=4, ensure_ascii=False)
         except Exception as e:
-            print(f"⚠️ Persistence Save Error: {str(e)}")
+            print(f"[ERROR] Persistence Save Error: {str(e)}")
 
-    def add_incident_data(self, data: Dict):
+    def add_incident_data(self, data: Dict, user_id: Optional[str] = None):
         """Add a manually analyzed post to global cache and commit to disk"""
         from models.incident import Incident
         
@@ -80,7 +90,8 @@ class IncidentService:
             description=data.get('text', ''),
             source=f"Instagram Scan: {data.get('username', 'Unknown')}",
             url=data.get('url', ''),
-            published_date=datetime.utcnow()
+            published_date=datetime.utcnow(),
+            user_id=user_id
         )
         
         incident.severity = data.get('severity', 'low')
@@ -91,13 +102,24 @@ class IncidentService:
         
         IncidentService.incidents_cache.append(incident)
         self._save_to_disk()
+        
+        # TERMINAL LOGGING FOR LIVE FEEDBACK (Safe for emojis on Windows)
+        try:
+            print(f"\033[94m[INGESTION]\033[0m Intelligence successfully captured from {incident.source}")
+            # Use .encode().decode() to strip unprintable characters for the console if needed
+            safe_description = incident.description[:60].encode('ascii', 'ignore').decode('ascii')
+            print(f" > Content: {safe_description}...")
+        except:
+            print(f"\033[94m[INGESTION]\033[0m Intelligence captured (Content contains special characters)")
+        print(f" > Analysis: Category=\033[93m{incident.category.upper()}\033[0m | Severity=\033[91m{incident.severity.upper()}\033[0m")
 
     # --- MONGODB SESSION HISTORY METHODS ---
     
-    def save_analysis_session(self, profile: Dict, posts: List[Dict], trust_score: float, insights: List[Dict]):
+    def save_analysis_session(self, profile: Dict, posts: List[Dict], trust_score: float, insights: List[Dict], user_id: Optional[str] = None):
         """Save a complete investigation session to MongoDB for historical tracking"""
         try:
             session_data = {
+                'user_id': user_id,
                 'username': profile.get('username'),
                 'full_name': profile.get('fullName'),
                 'timestamp': datetime.utcnow(),
@@ -109,31 +131,58 @@ class IncidentService:
                 'forensic_insights': insights
             }
             self.db.analysis_history.insert_one(session_data)
-            print(f"💾 Investigation Stored: {profile.get('username')} saved to MongoDB history.")
+            print(f"[DB] Investigation Stored: {profile.get('username')} saved to MongoDB history.")
         except Exception as e:
-            print(f"⚠️ MongoDB History Error: {str(e)}")
+            print(f"[ERROR] MongoDB History Error: {str(e)}")
 
-    def get_analysis_history(self, limit=20) -> List[Dict]:
+    def get_analysis_history(self, user_id: Optional[str] = None, limit=20) -> List[Dict]:
         """Fetch past investigation reports from MongoDB"""
         try:
-            history = list(self.db.analysis_history.find().sort('timestamp', -1).limit(limit))
+            query = {}
+            if user_id:
+                query['user_id'] = user_id
+                
+            history = list(self.db.analysis_history.find(query).sort('timestamp', -1).limit(limit))
             # Convert ObjectIds and Datetimes to strings for JSON
             for item in history:
                 item['_id'] = str(item['_id'])
                 item['timestamp'] = item['timestamp'].isoformat()
             return history
         except Exception as e:
-            print(f"⚠️ MongoDB History Fetch Error: {str(e)}")
+            print(f"[ERROR] MongoDB History Fetch Error: {str(e)}")
             return []
 
     # --- END MONGODB METHODS ---
 
-    def get_stats(self) -> Dict:
+    def add_to_monitoring_queue(self, username, user_id=None):
+        """Register a profile for background surveillance"""
+        try:
+            self.db.monitored_profiles.update_one(
+                {'username': username.lower(), 'user_id': user_id},
+                {'$set': {'last_monitored': datetime.utcnow(), 'active': True}},
+                upsert=True
+            )
+            print(f"[DB] Target Added to Surveillance: @{username}")
+        except Exception as e:
+            print(f"[ERROR] Surveillance Queue Error: {str(e)}")
+
+    def get_monitored_profiles(self):
+        """Fetch all active targets for the simulator"""
+        try:
+            return list(self.db.monitored_profiles.find({'active': True}))
+        except:
+            return []
+
+    def get_stats(self, user_id: Optional[str] = None) -> Dict:
         """Get summarized stats for dashboard charts from persistent cache with case-insensitive counting"""
         severity_dist = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0}
         label_dist = {'phishing': 0, 'malware': 0, 'ddos': 0, 'data_breach': 0, 'normal': 0}
         
-        for incident in IncidentService.incidents_cache:
+        filtered_cache = IncidentService.incidents_cache
+        if user_id:
+            filtered_cache = [i for i in filtered_cache if i.user_id == user_id]
+        
+        for incident in filtered_cache:
             # Handle case sensitivity for severity
             sev = str(incident.severity).lower().strip()
             if sev in severity_dist: 
@@ -151,14 +200,15 @@ class IncidentService:
                 label_dist['normal'] += 1
             
         return {
-            'total_posts': len(IncidentService.incidents_cache),
+            'total_posts': len(filtered_cache),
             'severity_distribution': severity_dist,
             'predictions_by_label': label_dist
         }
 
-    def get_incidents(self, severity=None, category=None, limit=100) -> List[Dict]:
+    def get_incidents(self, severity=None, category=None, limit=100, user_id: Optional[str] = None) -> List[Dict]:
         """Get incidents with optional filters from persistent cache"""
         filtered = IncidentService.incidents_cache
+        if user_id: filtered = [i for i in filtered if i.user_id == user_id]
         if severity: filtered = [i for i in filtered if i.severity == severity]
         if category: filtered = [i for i in filtered if i.category == category]
         return [i.to_dict() for i in reversed(filtered)][:limit]

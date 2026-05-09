@@ -1,5 +1,4 @@
-from flask import Flask, jsonify
-from flask_cors import CORS
+from flask import Flask, jsonify, request, make_response
 from flask_jwt_extended import JWTManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -23,6 +22,7 @@ def create_app():
     """Create and configure Flask application"""
     app = Flask(__name__)
     app.config.from_object(Config)
+    app.url_map.strict_slashes = False
 
     # Initialize JWT
     jwt = JWTManager(app)
@@ -37,23 +37,7 @@ def create_app():
     except Exception as e:
         logger.error(f"MongoDB connection failed: {str(e)}")
 
-    # Initialize rate limiter
-    limiter = Limiter(
-        key_func=get_remote_address,
-        app=app,
-        default_limits=[app.config.get('RATELIMIT_DEFAULT', '100 per hour')],
-        storage_uri=app.config.get('RATELIMIT_STORAGE_URL', 'memory://')
-    )
-
-    # Enable CORS with specific origins
-    cors_origins = app.config.get('CORS_ORIGINS', ['http://localhost:3000'])
-    CORS(app, resources={
-        r"/api/*": {
-            "origins": cors_origins,
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"]
-        }
-    })
+    # Manual CORS is handled in before_request/after_request
 
     # Initialize authentication middleware
     auth_middleware = AuthMiddleware(app)
@@ -87,10 +71,10 @@ def create_app():
             'message': 'Your session has been revoked. Please log in again.'
         }), 401
 
-    # Register blueprints
-    app.register_blueprint(auth_bp)  # Auth routes at /api/auth
-    app.register_blueprint(incidents_bp, url_prefix='/api/incidents')
-    app.register_blueprint(analysis_bp, url_prefix='/api/analysis')
+    # Register blueprints with strict slashes disabled to prevent redirects
+    app.register_blueprint(auth_bp, strict_slashes=False)
+    app.register_blueprint(incidents_bp, url_prefix='/api/incidents', strict_slashes=False)
+    app.register_blueprint(analysis_bp, url_prefix='/api/analysis', strict_slashes=False)
 
     # Root routes
     @app.route('/')
@@ -135,6 +119,30 @@ def create_app():
                 'error': str(e),
                 'timestamp': str(datetime.utcnow())
             }, 503
+
+    # --- UNIFIED SECURITY & CORS GATEWAY ---
+    @app.before_request
+    def security_gate():
+        origin = request.headers.get('Origin')
+        # Handle OPTIONS preflight immediately
+        if request.method == 'OPTIONS':
+            response = make_response('', 200)
+            response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Max-Age'] = '86400'
+            return response
+        logger.info(f"[{request.method}] {request.path}")
+
+    @app.after_request
+    def apply_cors_headers(response):
+        origin = request.headers.get('Origin')
+        response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+        return response
 
     @app.route('/api')
     def api_info():
@@ -184,14 +192,6 @@ def create_app():
             'message': 'Too many requests. Please try again later.'
         }), 429
 
-    # Security headers for all responses
-    @app.after_request
-    def security_headers(response):
-        security_headers = app.config.get('SECURITY_HEADERS', {})
-        for header_name, header_value in security_headers.items():
-            response.headers[header_name] = header_value
-        return response
-
     logger.info("Flask application created successfully with authentication")
     return app
 
@@ -206,6 +206,6 @@ if __name__ == '__main__':
     app.run(
         debug=app.config['DEBUG'],
         host='0.0.0.0',
-        port=8080,
+        port=5002,
         use_reloader=False
     )
