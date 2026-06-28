@@ -52,12 +52,9 @@ backendApi.interceptors.response.use(
            console.error("Critical: No token found. Redirecting...");
            window.location.href = '/login?expired=true';
         } else {
-           // Token exists but server said 401. Maybe session really expired?
-           // We'll give it one chance to refresh or just stay put if it's a minor request
-           if (originalRequest.url.includes('/incidents') || originalRequest.url.includes('/dashboard')) {
-              localStorage.removeItem('access_token');
-              window.location.href = '/login?expired=true';
-           }
+           // Token exists but server said 401. Clear the invalid token and redirect to login.
+           localStorage.removeItem('access_token');
+           window.location.href = '/login?expired=true';
         }
       }
     }
