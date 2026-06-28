@@ -23,8 +23,8 @@ class ApifyInstagramService:
         clean_url = profile_url.split('?')[0].rstrip('/')
         username = clean_url.split('/')[-1] if '/' in clean_url else clean_url.replace('@', '')
         
-        if not profile_url.startswith('https://'):
-            profile_url = f"https://www.instagram.com/{username}/"
+        # Always build a clean URL in the format Apify's validation regex expects
+        profile_url = f"https://www.instagram.com/{username}/"
 
         # Use at least 1 result to ensure we get profile metadata via the posts scraper
         fetch_limit = limit if limit > 0 else 1
