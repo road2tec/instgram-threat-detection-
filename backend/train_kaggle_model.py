@@ -183,6 +183,8 @@ def train_model(X, y):
 
     return rf_model, vectorizer, accuracy, X_test, y_test, y_pred
 
+import joblib
+
 def save_models(rf_model, vectorizer):
     """
     Save trained models
@@ -190,13 +192,11 @@ def save_models(rf_model, vectorizer):
     print("\n[STEP 6] Saving models...")
 
     # Save model
-    with open(OUTPUT_MODEL_PATH, 'wb') as f:
-        pickle.dump(rf_model, f)
+    joblib.dump(rf_model, OUTPUT_MODEL_PATH)
     print(f"     Model saved: {OUTPUT_MODEL_PATH}")
 
     # Save vectorizer
-    with open(OUTPUT_VECTORIZER_PATH, 'wb') as f:
-        pickle.dump(vectorizer, f)
+    joblib.dump(vectorizer, OUTPUT_VECTORIZER_PATH)
     print(f"     Vectorizer saved: {OUTPUT_VECTORIZER_PATH}")
 
 def test_predictions(rf_model, vectorizer):
